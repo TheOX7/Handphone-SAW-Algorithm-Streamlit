@@ -4,7 +4,7 @@ import math
 import numpy as np
 
 st.set_page_config(
-    page_title="Premier League 2022/23",
+    page_title="Recommendation Samsung Smartphone ",
     layout='wide'
 )
 
@@ -41,9 +41,9 @@ weights = {
 }
 
 # Streamlit web app
-st.title('Mobile Phone Recommendation using Weighted Criteria')
+st.title('Samsung Recommendation using Simple Additive Weighting')
 
-col_1, col_2 = st.tabs(['Overview Smartphone Dataset', 'Weighting Smartphone']) 
+col_1, col_2, col_3 = st.tabs(['Overview Smartphone Dataset', 'Weighting Smartphone', 'Add New Smartphone']) 
 
 with col_1:
     # Display the original dataset
