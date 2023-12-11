@@ -8,8 +8,14 @@ st.set_page_config(
     layout='wide'
 )
 
+st.title('Samsung Recommendation using Simple Additive Weighting')
+url_editor = "https://www.linkedin.com/in/marselius-agus-dhion-374106226/"
+github_url = "https://github.com/TheOX7/Handphone-SAW-Algorithm-Streamlit"
+st.markdown(f'Streamlit App by [Marselius Agus Dhion]({url_editor})', unsafe_allow_html=True)
+st.markdown(f'GitHub Repository → {github_url}', unsafe_allow_html=True)
+
 # Load dataset
-df = pd.read_csv('D:\GitHub\TheOX47\Handphone-SAW-Algorithm-Streamlit\cleaned_data_df.csv')
+df = pd.read_csv('cleaned_data_df.csv')
 df_weight = pd.DataFrame()
 
 def display_size_weight(p, l):
@@ -18,6 +24,14 @@ def display_size_weight(p, l):
     sqrt_value = math.sqrt(width * height)
     rounded_value = np.round(sqrt_value, 0)
     return int(rounded_value / 40)
+
+# Fungsi untuk mengubah nilai
+def map_removability(value):
+    return "Removable" if value == 1 else "Not Removable"
+
+# Menggunakan fungsi map untuk mengubah nilai kolom
+df['Battery Removable'] = df['Battery Removable'].map(map_removability)
+
 
 # Define weights for each column
 weights = {
@@ -31,7 +45,7 @@ weights = {
     'Primary Camera MP': lambda x: x,  # Larger MP is better
     'Secondary Camera MP': lambda x: x,  # Larger MP is better
     'Battery (mAh)': lambda x: x,  # Larger mAh is better
-    'Battery Removable': lambda x: 1 if x == 1 else 0,  # Higher weight if removable
+    'Battery Removable': lambda x: 5 if x == "Removable" else 0,  # Higher weight if removable
     'Screen to Body Ratio': lambda x: x,  # Larger ratio is better
     'CPU (MB)': lambda x: x,  # Larger speed is better
     'RAM (MB)': lambda x: x,  # Larger RAM size is better
@@ -41,7 +55,6 @@ weights = {
 }
 
 # Streamlit web app
-st.title('Samsung Recommendation using Simple Additive Weighting')
 
 col_1, col_2, col_3 = st.tabs(['Overview Smartphone Dataset', 'Weighting Smartphone', 'Add New Smartphone']) 
 
@@ -71,10 +84,10 @@ with col_2:
     # Apply weights to each column
     for col in weights:
         if col in df.columns:
-            df_weight[col + ' Weight'] = df[col].apply(weights[col])
+            df_weight[col + ' Score'] = df[col].apply(weights[col])
 
-    df_weight['Display Pixels Weight'] = df_weight[['Width (mm) Weight', 'Length (mm) Weight', 'Thickness (mm) Weight']].sum(axis=1)
-    df_weight.drop(['Width (mm) Weight', 'Length (mm) Weight', 'Thickness (mm) Weight'], inplace=True, axis=1)
+    df_weight['Display Pixels Score'] = df_weight[['Width (mm) Score', 'Length (mm) Score', 'Thickness (mm) Score']].sum(axis=1)
+    df_weight.drop(['Width (mm) Score', 'Length (mm) Score', 'Thickness (mm) Score'], inplace=True, axis=1)
 
     # Checkbox to select models
     selected_models = st.multiselect('Select models for scoring', df['Model'].unique())
