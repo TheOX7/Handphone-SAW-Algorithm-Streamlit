@@ -23,7 +23,7 @@ def display_size_weight(p, l):
     height = int(l)
     sqrt_value = math.sqrt(width * height)
     rounded_value = np.round(sqrt_value, 0)
-    return int(rounded_value / 40)
+    return rounded_value
 
 # Fungsi untuk mengubah nilai
 def map_removability(value):
@@ -35,20 +35,20 @@ df['Battery Removable'] = df['Battery Removable'].map(map_removability)
 
 # Define weights for each column
 weights = {
-    'Weight (Gram)': lambda x: 1 / x,  # Smaller weight is better
-    'Price (£)': lambda x: 1 / x,  # Smaller price is better
-    'Length (mm)': lambda x: 1 / x,  # Smaller length is better
-    'Width (mm)': lambda x: 1 / x,  # Smaller width is better
-    'Thickness (mm)': lambda x: 1 / x,  # Smaller thickness is better
-    'Display Size Pixels': lambda x: display_size_weight(*x.split(' x ')),  # Use the display_size_weight function
-    'Internal Memory (GB)': lambda x: x,  # Larger internal memory is better
-    'Primary Camera MP': lambda x: x,  # Larger MP is better
-    'Secondary Camera MP': lambda x: x,  # Larger MP is better
-    'Battery (mAh)': lambda x: x,  # Larger mAh is better
-    'Battery Removable': lambda x: 5 if x == "Removable" else 0,  # Higher weight if removable
-    'Screen to Body Ratio': lambda x: x,  # Larger ratio is better
-    'CPU (MB)': lambda x: x,  # Larger speed is better
-    'RAM (MB)': lambda x: x,  # Larger RAM size is better
+    'Weight (Gram)': lambda x: x / 4,  # Smaller weight is better
+    'Price (£)': lambda x: x / 4,  # Smaller price is better
+    'Length (mm)': lambda x: x / 4,  # Smaller length is better
+    'Width (mm)': lambda x: x / 4,  # Smaller width is better
+    'Thickness (mm)': lambda x: x / 4,  # Smaller thickness is better
+    'Display Size Pixels': lambda x: display_size_weight(*x.split(' x ')) / 4,  # Use the display_size_weight function
+    'Internal Memory (GB)': lambda x: x / 4,  # Larger internal memory is better
+    'Primary Camera MP': lambda x: x / 4,  # Larger MP is better
+    'Secondary Camera MP': lambda x: x / 4,  # Larger MP is better
+    'Battery (mAh)': lambda x: x / 5,  # Larger mAh is better
+    'Battery Removable': lambda x: 5 if x == "Removable" else 0, 
+    'Screen to Body Ratio': lambda x: x / 5,  # Larger ratio is better
+    'CPU (MB)': lambda x: x / 5,  # Larger speed is better
+    'RAM (MB)': lambda x: x / 5,  # Larger RAM size is better
     'Display Type': lambda x: 4 if x == 'Super AMOLED' else 3 if x == 'AMOLED' else 2 if x == 'IPS LCD' else 1 if x == 'TFT' else 0,
     'Color Support': lambda x: 3 if x == '16M' else 2 if x == '256K' else 1 if x == '65K' else 0,  # Higher weight for 16M color support
     'Additional Features': lambda x: 3 if 'Super AMOLED Plus' in x else 2 if 'Super Flexible AMOLED' in x else 1 if 'SC-LCD' in x else 0,
@@ -56,7 +56,7 @@ weights = {
 
 # Streamlit web app
 
-col_1, col_2, col_3 = st.tabs(['Overview Smartphone Dataset', 'Weighting Smartphone', 'Add New Smartphone']) 
+col_1, col_2, col_3 = st.tabs(['Overview Smartphone Dataset', 'Weighting Smartphone', 'CRUD Smartphone Data']) 
 
 with col_1:
     # Display the original dataset
@@ -86,9 +86,6 @@ with col_2:
         if col in df.columns:
             df_weight[col + ' Score'] = df[col].apply(weights[col])
 
-    df_weight['Display Pixels Score'] = df_weight[['Width (mm) Score', 'Length (mm) Score', 'Thickness (mm) Score']].sum(axis=1)
-    df_weight.drop(['Width (mm) Score', 'Length (mm) Score', 'Thickness (mm) Score'], inplace=True, axis=1)
-
     # Checkbox to select models
     selected_models = st.multiselect('Select models for scoring', df['Model'].unique())
 
@@ -96,24 +93,68 @@ with col_2:
     filtered_df_weight = df_weight[df_weight.index.isin(df[df['Model'].isin(selected_models)].index)]
 
     # Calculate overall score for the filtered DataFrame
-    filtered_df = df[df['Model'].isin(selected_models)]
-    
-    # Convert selected columns to numeric if not already
-    numeric_columns = list(weights.keys())
-    filtered_df[numeric_columns] = filtered_df[numeric_columns].apply(pd.to_numeric, errors='coerce')
-
-    # Ensure there are no NaN values after conversion
-    filtered_df = filtered_df.dropna(subset=numeric_columns, how='all')
-
-    # Calculate overall score
-    filtered_df['Overall Score'] = filtered_df[numeric_columns].sum(axis=1)
+    overall_score_column_names = [col + ' Score' for col in weights]
+    filtered_df_weight['Overall Score'] = filtered_df_weight[overall_score_column_names].sum(axis=1)
 
     # Display the filtered DataFrame and overall score
     st.subheader('Weight/Scoring Dataset')
     st.dataframe(filtered_df_weight)
 
     # Display the sorted dataset based on overall score for the filtered DataFrame
-    sorted_filtered_df = filtered_df.sort_values(by='Overall Score', ascending=False)
+    sorted_filtered_df = df.loc[df['Model'].isin(selected_models)].merge(
+        filtered_df_weight[['Overall Score']], left_index=True, right_index=True
+    ).sort_values(by='Overall Score', ascending=False)
+
     st.subheader('Sorted Dataset based on Overall Score (Filtered)')
     st.dataframe(sorted_filtered_df[['Brand', 'Model', 'Overall Score']])
 
+with col_3:
+    st.subheader('CRUD Smartphone Data')
+
+    with st.expander('Create New Smartphone Data'):
+        # Create
+        st.subheader('Create New Smartphone Data')
+        new_model = st.text_input('Model:', '')
+        new_brand = st.text_input('Brand:', '')
+        # ... add other input fields for the remaining columns
+
+        if st.button('Add Smartphone'):
+            # Add the new smartphone to the DataFrame
+            new_data = {'Model': new_model, 'Brand': new_brand}
+            # ... add other fields to new_data dictionary
+            df = df.append(new_data, ignore_index=True)
+            st.success(f'Smartphone {new_model} added successfully!')
+
+    with st.expander('Update Smartphone Data') :
+        # Update
+        st.subheader('Update Smartphone Data')
+        selected_update_model = st.selectbox('Select a phone model to update', df['Model'].unique())
+        selected_update_row = df[df['Model'] == selected_update_model].index[0]
+
+        # Display the current details of the selected smartphone
+        st.text(f"Current Brand: {df.at[selected_update_row, 'Brand']}")
+        # ... display other current details
+
+        # Allow user to update fields
+        new_brand_update = st.text_input('New Brand:', df.at[selected_update_row, 'Brand'])
+        # ... add other input fields for the remaining columns
+
+        if st.button('Update Smartphone'):
+            # Update the selected smartphone with new values
+            df.at[selected_update_row, 'Brand'] = new_brand_update
+            # ... update other fields
+            st.success(f'Smartphone {selected_update_model} updated successfully!')
+
+    with st.expander('Delete Smartphone Data') :
+        # Delete
+        st.subheader('Delete Smartphone Data')
+        selected_delete_model = st.selectbox('Select a phone model to delete', df['Model'].unique())
+
+        if st.button('Delete Smartphone'):
+            # Delete the selected smartphone from the DataFrame
+            df = df[df['Model'] != selected_delete_model]
+            st.success(f'Smartphone {selected_delete_model} deleted successfully!')
+  
+    # Display the updated DataFrame
+    st.subheader('Updated Dataset')
+    st.dataframe(df.drop(['Brand', 'Image URL'], axis=1))
