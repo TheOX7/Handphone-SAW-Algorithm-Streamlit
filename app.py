@@ -65,20 +65,53 @@ with col_1:
     st.dataframe(df_original.drop(['Brand', 'Image URL'], axis=1))
 
     
-    col_1_1, col_1_2 = st.columns(2)
-    with col_1_1 :
+    col_1_1, col_1_2, col_1_3 = st.columns([1,2,1])
+    with col_1_2 :
+        st.subheader('Selected Smartphone Specifications')
         # Select a row from the DataFrame based on Model
         selected_model = st.selectbox('Select a phone model', df['Model'].unique())
 
         # Get the selected row based on the selected model
         selected_row = df[df['Model'] == selected_model].index[0]
 
-        # Display the image of the selected row
-        selected_phone_image_url = df.at[selected_row, 'Image URL']
-        st.image(selected_phone_image_url, caption=f"Selected Phone - {df.at[selected_row, 'Brand']} {df.at[selected_row, 'Model']}",
-                width=200,  # Set the desired width
-                use_column_width=False)  # Set to False to use the specified width    with col_1_2 :
-        st.text(f"{selected_model}")
+        col_1_2_1, col_1_2_2, col_1_2_3 = st.columns([2,3,4])
+        
+        with col_1_2_1 :
+            # Display the image of the selected row
+            selected_phone_image_url = df.at[selected_row, 'Image URL']
+            st.image(selected_phone_image_url, caption=f"{df.at[selected_row, 'Brand']} {df.at[selected_row, 'Model']}",
+                    width=175,  # Set the desired width
+                    use_column_width=False)  # Set to False to use the specified width
+
+        with col_1_2_2:            
+            # Keenam spesifikasi pertama
+            for feature, weight_function in weights.items():
+                if feature in ['Length (mm)', 'Width (mm)', 'Thickness (mm)', 'Battery Removable', 'Additional Features', 'Screen to Body Ratio',
+                               'CPU (MB)', 'RAM (MB)', 'Display Size Pixels', 'Display Type', 'Color Support']:
+                    # Skip features that are not numerical
+                    continue
+                
+                current_value = df.at[selected_row, feature]
+                st.text(f"{feature}: {current_value}")
+                            
+        with col_1_2_3:    
+            # Keenam spesifikasi terakhir
+            for feature, weight_function in weights.items():
+                if feature in ['Length (mm)', 'Width (mm)', 'Thickness (mm)', 'Battery Removable', 'Additional Features', 'Screen to Body Ratio',
+                               'Weight (Gram)', 'Price (£)', 'Internal Memory (GB)', 'Primary Camera MP', 'Secondary Camera MP', 'Battery (mAh)']:
+                    # Skip features that are not numerical
+                    continue
+
+                current_value = df.at[selected_row, feature]
+                st.text(f"{feature}: {current_value}")       
+                 
+            # Display Phone Dimension
+            length_value = df.at[selected_row, 'Length (mm)']
+            width_value = df.at[selected_row, 'Width (mm)']
+            thickness_value = df.at[selected_row, 'Thickness (mm)']
+            st.text(f"Dimensions : {length_value} mm x {width_value} mm x {thickness_value} mm")
+
+
     
 with col_2:
     with st.expander('Edit Weights') :
