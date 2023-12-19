@@ -40,15 +40,15 @@ weights = {
     'Length (mm)': lambda x: x * 0.25,  # Smaller length is better
     'Width (mm)': lambda x: x * 0.25,  # Smaller width is better
     'Thickness (mm)': lambda x: x * 0.25,  # Smaller thickness is better
+    'Display Size Pixels': lambda x: display_size_weight(*x.split(' x ')) * 0.25,  # Use the display_size_weight function
     'Internal Memory (GB)': lambda x: x * 0.25,  # Larger internal memory is better
     'Primary Camera MP': lambda x: x * 0.25,  # Larger MP is better
     'Secondary Camera MP': lambda x: x * 0.25,  # Larger MP is better
     'Battery (mAh)': lambda x: x * 0.20,  # Larger mAh is better
+    'Battery Removable': lambda x: 5 if x == "Removable" else 0, 
     'Screen to Body Ratio': lambda x: x * 0.20,  # Larger ratio is better
     'CPU (MB)': lambda x: x * 0.20,  # Larger speed is better
     'RAM (MB)': lambda x: x * 0.20,  # Larger RAM size is better
-    'Battery Removable': lambda x: 5 if x == "Removable" else 0, 
-    'Display Size Pixels': lambda x: display_size_weight(*x.split(' x ')) * 0.25,  # Use the display_size_weight function
     'Display Type': lambda x: 4 if x == 'Super AMOLED' else 3 if x == 'AMOLED' else 2 if x == 'IPS LCD' else 1 if x == 'TFT' else 0,
     'Color Support': lambda x: 3 if x == '16M' else 2 if x == '256K' else 1 if x == '65K' else 0,  # Higher weight for 16M color support
     'Additional Features': lambda x: 3 if 'Super AMOLED Plus' in x else 2 if 'Super Flexible AMOLED' in x else 1 if 'SC-LCD' in x else 0,
@@ -114,15 +114,17 @@ with col_1:
 
     
 with col_2:
-    with st.expander('Edit Weights') :
+    with st.expander('Edit Weights (Click Here)') :
         # Edit weights for each column
-        st.subheader('Edit Weights for Each Columns')
+        st.subheader('Edit Weights for Each Columns (Decimals to Percentage)')
 
         # Create a dictionary to store edited weights
         edited_weights = {}
 
         # Split the features into groups of 4
-        feature_groups = [list(weights.keys())[i:i+4] for i in range(0, len(weights), 4)]
+        filter_keys = ['Battery Removable', 'Display Size Pixels', 'Display Type', 'Color Support', 'Additional Features']
+        filtered_weights = {key: value for key, value in weights.items() if key not in filter_keys}
+        feature_groups = [list(filtered_weights.keys())[i:i+4] for i in range(0, len(filtered_weights), 4)]
 
         for group in feature_groups:
             # Create columns for each group
@@ -132,7 +134,7 @@ with col_2:
                 if col not in ['Battery Removable', 'Display Size Pixels', 'Display Type', 'Color Support', 'Additional Features']:
                     # Use spinner to edit weights
                     current_weight = weights[col](0)  # Get the current weight value by applying the lambda function to a dummy value
-                    weight_value = weight_column.number_input(f'{col} Weight', min_value=0.0, max_value=1.0, value=current_weight, step=0.01)
+                    weight_value = weight_column.number_input(f'{col}', min_value=0.0, max_value=1.0, value=current_weight, step=0.01)
                     edited_weights[col] = weight_value
 
         # Update weights dictionary with edited values
@@ -170,21 +172,60 @@ with col_2:
 with col_3:
     st.subheader('CRUD Smartphone Data')
 
-    with st.expander('Create New Smartphone Data'):
-        # Create
+    with st.expander('Create New Smartphone Data (Click Here)'):
         st.subheader('Create New Smartphone Data')
-        new_model = st.text_input('Model:', '')
-        new_brand = st.text_input('Brand:', '')
-        # ... add other input fields for the remaining columns
+        
+        col_3_1, col_3_2, col_3_3, col_3_4, col_3_5, col_3_6 = st.columns(6)
+        with col_3_1 :            
+            model = st.text_input('Model Name', '')
+            weight = st.number_input('Weight (Gram)', min_value=0.0, step=0.1)
+            price = st.number_input('Price (£)', min_value=0)
+            
+        with col_3_2 :
+            length = st.slider('Length (mm)', min_value=0.0, max_value=500.0, step=0.1)
+            width = st.slider('Width (mm)', min_value=0.0, max_value=500.0, step=0.1)
+            thickness = st.slider('Thickness (mm)', min_value=0.0, max_value=500.0, step=0.1)
+            
+        with col_3_3 :
+            internal_memory = st.number_input('Internal Memory (GB)', min_value=0)
+            primary_camera = st.number_input('Primary Camera MP', min_value=0)
+            secondary_camera = st.number_input('Secondary Camera MP', min_value=0)
 
+        with col_3_4 :
+            cpu = st.number_input('CPU (MB)', min_value=0)
+            ram = st.number_input('RAM (MB)', min_value=0)
+            display_type = st.selectbox('Display Type', ('Super AMOLED', 'AMOLED', 'PLS', 'IPS LCD', 'TFT'), key='display_type_update')
+            
+            
+
+        with col_3_5 :
+            size_pixels = st.text_input('Display Size Pixels (P x L)', '')
+            battery = st.number_input('Battery (mAh)', min_value=0)
+            screen_ratio = st.slider('Screen to Body Ratio (%)', min_value=0.0, max_value=100.0, step=0.1)
+
+        with col_3_6 :
+            battery_removable = st.radio('Battery Removable', ['Removable', 'Not Removable'])
+            color_support  = st.radio('Color Support', ['16M', '256K', '65K'])
+            additional_information = st.text_input('Additional Information', '')
+
+            
+            
         if st.button('Add Smartphone'):
             # Add the new smartphone to the DataFrame
-            new_data = {'Model': new_model, 'Brand': new_brand}
-            # ... add other fields to new_data dictionary
+            new_data = {
+                'Model': model, 'Brand': 'Samsung',
+                'Weight (Gram)' : weight, 'Price (£)' : price,
+                'Length (mm)' : length, 'Width (mm)' : width, 'Thickness (mm)': thickness,
+                'Display Size Pixels' : size_pixels, 'Internal Memory (GB)' : internal_memory,
+                'Primary Camera MP' : primary_camera, 'Secondary Camera MP' : secondary_camera,
+                'Battery (mAh)' : battery, 'Battery Removable' : battery_removable,
+                'Screen to Body Ratio' : screen_ratio, 'CPU (MB)' : cpu, 'RAM (MB)' : ram,
+                'Display Type' : display_type, 'Color Support' : color_support,
+                }
             df = df.append(new_data, ignore_index=True)
-            st.success(f'Smartphone {new_model} added successfully!')
+            st.success(f'Smartphone {model} added successfully!')
 
-    with st.expander('Update Smartphone Data') :
+    with st.expander('Update Smartphone Data (Click Here)'):
         # Update
         st.subheader('Update Smartphone Data')
         selected_update_model = st.selectbox('Select a phone model to update', df['Model'].unique())
@@ -192,19 +233,100 @@ with col_3:
 
         # Display the current details of the selected smartphone
         st.text(f"Current Brand: {df.at[selected_update_row, 'Brand']}")
-        # ... display other current details
+
+        col_3_2_1, col_3_2_2, col_3_2_3, col_3_2_4, col_3_2_5, col_3_2_6 = st.columns(6)
+        with col_3_2_1 :            
+            model_update = st.text_input('Model Name', df.at[selected_update_row, 'Model'])
+            weight_update = st.number_input('Weight (Gram)', min_value=0.0, step=0.1, value=df.at[selected_update_row, 'Weight (Gram)'])
+            price_update = st.number_input('Price (£)', min_value=0, value=df.at[selected_update_row, 'Price (£)'])
+            
+        with col_3_2_2 :
+            length_update = st.slider('Length (mm)', min_value=0.0, max_value=500.0, step=0.1, value=df.at[selected_update_row, 'Length (mm)'])
+            width_update = st.slider('Width (mm)', min_value=0.0, max_value=500.0, step=0.1, value=df.at[selected_update_row, 'Width (mm)'])
+            thickness_update = st.slider('Thickness (mm)', min_value=0.0, max_value=500.0, step=0.1, value=df.at[selected_update_row, 'Thickness (mm)'])
+            
+        with col_3_2_3 :
+            internal_memory_update = st.number_input(
+                'Internal Memory (GB)', min_value=float(0), max_value=float(10000),  
+                step=1.0, value=float(df.at[selected_update_row, 'Internal Memory (GB)']))
+            primary_camera_update = st.number_input(
+                'Primary Camera MP', min_value=float(0), max_value=float(16), 
+                value=float(df.at[selected_update_row, 'Primary Camera MP']))
+            secondary_camera_update = st.number_input(
+                'Secondary Camera MP', min_value=float(0), max_value=float(16), 
+                value=float(df.at[selected_update_row, 'Secondary Camera MP']))
+
+        with col_3_2_4 :
+            cpu_update = st.number_input(
+                'CPU (MB)', min_value=int(0), max_value=int(10000),
+                value=int(df.at[selected_update_row, 'CPU (MB)']))
+            ram_update = st.number_input(
+                'RAM (MB)', min_value=int(0), max_value=int(10000),
+                value=int(df.at[selected_update_row, 'RAM (MB)']))
+            
+            display_type_options = ['Super AMOLED', 'AMOLED', 'PLS', 'IPS LCD', 'TFT']
+            default_display_type = df.at[selected_update_row, 'Display Type']
+
+            if default_display_type not in display_type_options:
+                default_display_type = display_type_options[0]
+
+            selected_display_update = st.selectbox(
+                'Display Type',
+                options=display_type_options,
+                index=display_type_options.index(default_display_type)
+            )
+
+        with col_3_2_5 :
+            size_pixels_update = st.text_input('Display Size Pixels (P x L)', value=df.at[selected_update_row, 'Display Size Pixels'])
+            battery_update = st.number_input('Battery (mAh)', min_value=0, value=int(df.at[selected_update_row, 'Battery (mAh)']))
+            screen_ratio_update = st.slider('Screen to Body Ratio (%)', min_value=0.0, max_value=100.0, step=0.1, value=df.at[selected_update_row, 'Screen to Body Ratio'])
+
+        with col_3_2_6:
+            battery_removable_update = st.radio(
+                'Battery Removable',
+                ['Removable', 'Not Removable'],
+                index=1 if df.at[selected_update_row, 'Battery Removable'] == 'Not Removable' else 0,
+                key='battery_removable_update'
+            )
+            color_support_update = st.radio(
+                'Color Support',
+                ['16M', '256K', '65K'],
+                index=['16M', '256K', '65K'].index(df.at[selected_update_row, 'Color Support']),
+                key='color_support_update'
+            )
+            additional_information_update = st.text_input(
+                'Additional Information',
+                value=df.at[selected_update_row, 'Additional Features'],
+                key='additional_information_update'
+            )
 
         # Allow user to update fields
         new_brand_update = st.text_input('New Brand:', df.at[selected_update_row, 'Brand'])
-        # ... add other input fields for the remaining columns
 
         if st.button('Update Smartphone'):
             # Update the selected smartphone with new values
             df.at[selected_update_row, 'Brand'] = new_brand_update
-            # ... update other fields
-            st.success(f'Smartphone {selected_update_model} updated successfully!')
+            df.at[selected_update_row, 'Model'] = model_update
+            df.at[selected_update_row, 'Weight (Gram)'] = weight_update
+            df.at[selected_update_row, 'Price (£)'] = price_update
+            df.at[selected_update_row, 'Length (mm)'] = length_update
+            df.at[selected_update_row, 'Width (mm)'] = width_update
+            df.at[selected_update_row, 'Thickness (mm)'] = thickness_update
+            df.at[selected_update_row, 'Display Size Pixels'] = size_pixels_update
+            df.at[selected_update_row, 'Internal Memory (GB)'] = internal_memory_update
+            df.at[selected_update_row, 'Primary Camera MP'] = primary_camera_update
+            df.at[selected_update_row, 'Secondary Camera MP'] = secondary_camera_update
+            df.at[selected_update_row, 'Battery (mAh)'] = battery_update
+            df.at[selected_update_row, 'Screen to Body Ratio'] = screen_ratio_update
+            df.at[selected_update_row, 'CPU (MB)'] = cpu_update
+            df.at[selected_update_row, 'RAM (MB)'] = ram_update
+            df.at[selected_update_row, 'Display Type'] = selected_display_update
+            df.at[selected_update_row, 'Color Support'] = color_support_update
+            df.at[selected_update_row, 'Battery Removable'] = 'Not Removable' if battery_removable_update == 1 else 'Removable'
+            df.at[selected_update_row, 'Additional Features'] = additional_information_update
 
-    with st.expander('Delete Smartphone Data') :
+            st.success(f'Smartphone {selected_update_model} updated successfully!')
+    with st.expander('Delete Smartphone Data (Click Here)') :
         # Delete
         st.subheader('Delete Smartphone Data')
         selected_delete_model = st.selectbox('Select a phone model to delete', df['Model'].unique())
